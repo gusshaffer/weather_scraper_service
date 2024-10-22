@@ -8,20 +8,8 @@ from datetime import datetime
 import pytz
 import sqlite3
 from zoneinfo import ZoneInfo
+from flask import Flask, jsonify, request, make_response
 
-
-def convert_to_utc(date_string, timezone_str):
-
-    # Create a timezone object from the timezone string
-    timezone = pytz.timezone(timezone_str)
-
-    # Parse the date string into a datetime object with the specified timezone
-    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S%z")
-
-    # Convert the datetime object to UTC
-    utc_dt = dt.astimezone(pytz.utc)
-
-    return utc_dt
 
 
 # Open the location JSON file
@@ -39,10 +27,8 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS forecast (latitude INT,
                                                         start DATETIME, 
                                                         end DATETIME)''')
 
-
-    
-pretty_json = json.dumps(config, indent=4)
-
+# Pull in config
+# TODO config error checking is pretty lame
 if not "location" in config:
     print("Missing location!")
     sys.exit(1)
@@ -69,6 +55,20 @@ print("Starting weather scraper for "
 	  "at URL:", api_url);
 
 
+# utility used to convert weather time stamps to UTC
+def convert_to_utc(date_string, timezone_str):
+    # Create a timezone object from the timezone string
+    timezone = pytz.timezone(timezone_str)
+
+    # Parse the date string into a datetime object with the specified timezone
+    dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S%z")
+
+    # Convert the datetime object to UTC
+    utc_dt = dt.astimezone(pytz.utc)
+
+    return utc_dt
+
+# Set up thread to poll weather.gov
 tl = Timeloop()
 
 @tl.job(interval=timedelta(minutes=interval_minutes,seconds=interval_seconds))
@@ -77,7 +77,6 @@ def weather_scraper_thread():
     thread_conn = sqlite3.connect('mydatabase.db')
     thread_cursor = thread_conn.cursor()
     
-    print(time.ctime())
     response = requests.get(api_url)
     hourly_api = response.json()["properties"]["forecastHourly"]
 
@@ -103,10 +102,81 @@ def weather_scraper_thread():
     thread_conn.commit()
     thread_conn.close()
 
+    #end of weather_scraper_thread()
+
+# Setup API
     
+app = Flask(__name__)
+
+@app.route('/forecast', methods=['GET'])
+def get_forecast():
+    try: 
+        request_lat = request.args['lat']
+        request_long = request.args['long']
+        request_date_str = request.args['date']
+        request_hour_str = request.args['hour']
+    except KeyError: 
+        return make_response('Missing arguments\n', 400)     
+    
+    request_date = datetime.strptime(request_date_str, "%Y-%m-%d")
+    request_hour = datetime.strptime(request_hour_str, "%H")
+    request_datetime = datetime.combine(request_date, datetime.time(request_hour))
+
+    try:
+        my_conn = sqlite3.connect('mydatabase.db')
+        my_cursor = my_conn.cursor()
+
+        # Execute a query to fetch the data
+        my_cursor.execute('''SELECT * FROM forecast WHERE latitude=? AND longitude=?''', 
+                            (request_lat, request_long))
+
+        # Fetch all the rows
+        rows = my_cursor.fetchall()
+
+         # Print the table
+        for row in rows:
+            print(row)
+
+        my_cursor.execute('''SELECT MAX(temperature), MIN(temperature) FROM forecast WHERE latitude=? AND longitude=? AND start < ? AND end > ?''', 
+                       (request_lat, request_long, request_datetime, request_datetime))
+    except sqlite3.Error as e:
+      print('An error occurred:', e)
+      return make_response('Internal error querying data\n', 500)
+
+    try:
+        result = my_cursor.fetchone()
+        max_temp = result[0]
+        min_temp = result[1]
+    except:
+        return make_response('Coordinate date not found\n', 404)
+
+    if max_temp is None or min_temp is None:
+        return make_response('Coordinate date not found\n', 404)
+
+
+    print("request datetime", request_datetime, "max", max_temp, "min", min_temp)
+
+    return_data = {
+        'max': max_temp,
+        'min': min_temp
+    }
+    return(jsonify(return_data))
+
+
+
 
 if __name__ == "__main__":
-    tl.start(block=True)
+    
+    
+    # prime the pump. thread loop will make its first run AFTER interval
+    weather_scraper_thread()
+    # start polling thread
+    tl.start(block=False)
+
+    # start app
+    app.run(debug=True, port=8080)
+    
+
 
 def print_table_schema(conn, table_name):
     """Prints the schema of a given table in an SQLite database."""
