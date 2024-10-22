@@ -1,0 +1,5 @@
+All temperatures stored and recorded in Faranheit
+Location and interval configured in a single JSON file
+Lack of lacation in config is invalid
+Return 404 for all incoming API requests for locations other than specified in config
+
