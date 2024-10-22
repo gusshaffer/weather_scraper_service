@@ -2,5 +2,9 @@
     "location": {
         "lat": "39.7456", 
         "lon": "-97.0892"
-    } 
+    },
+    "interval": {
+        "minutes": "0",
+        "seconds": "10"
+    }
 }
