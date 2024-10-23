@@ -4,7 +4,7 @@
         "lon": "-97.0892"
     },
     "interval": {
-        "minutes": "0",
-        "seconds": "10"
+        "minutes": "60",
+        "seconds": "0"
     }
 }
