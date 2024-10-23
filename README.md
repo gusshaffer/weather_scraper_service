@@ -28,5 +28,5 @@ Replacing `2024-10-23&hour=10` with a date and hour in the next 72 hours.
 ## Caveats
 * Exception handling is inconsistent
 * I would like to make the coordinate matching more robust, but I prioritized other things with my time
-* I'm not whipping out the SQLite DB between runs, so entries will pile up over time. 
+* I'm not wiping out the SQLite DB between runs, so entries will pile up over time. 
     * Didn't seem like the highest priority for this test app
