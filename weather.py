@@ -89,7 +89,6 @@ def weather_scraper_thread():
 
     for period in hourly_response.json()["properties"]["periods"]:
         if int(period["number"]) < 73: #next 72 hours
-   #         print("period", period["number"], "start time", period["startTime"]) 
             start_time = period["startTime"]
             end_time = period["endTime"]
 
@@ -122,20 +121,10 @@ def get_forecast():
     request_hour = datetime.strptime(request_hour_str, "%H")
     request_datetime = datetime.combine(request_date, datetime.time(request_hour))
 
+# look for data matching these coordinates within this time window
     try:
         my_conn = sqlite3.connect('mydatabase.db')
         my_cursor = my_conn.cursor()
-
-        # Execute a query to fetch the data
-        my_cursor.execute('''SELECT * FROM forecast WHERE latitude=? AND longitude=?''', 
-                            (request_lat, request_long))
-
-        # Fetch all the rows
-        rows = my_cursor.fetchall()
-
-         # Print the table
-        for row in rows:
-            print(row)
 
         my_cursor.execute('''SELECT MAX(temperature), MIN(temperature) FROM forecast WHERE latitude=? AND longitude=? AND start < ? AND end > ?''', 
                        (request_lat, request_long, request_datetime, request_datetime))
@@ -154,7 +143,7 @@ def get_forecast():
         return make_response('Coordinate date not found\n', 404)
 
 
-    print("request datetime", request_datetime, "max", max_temp, "min", min_temp)
+    # print("request datetime", request_datetime, "max", max_temp, "min", min_temp)
 
     return_data = {
         'max': max_temp,
@@ -167,14 +156,13 @@ def get_forecast():
 
 if __name__ == "__main__":
     
-    
     # prime the pump. thread loop will make its first run AFTER interval
     weather_scraper_thread()
     # start polling thread
     tl.start(block=False)
 
-    # start app
-    app.run(debug=True, port=8080)
+    # start API service
+    app.run(host="0.0.0.0", port=5000, debug=True)
     
 
 
