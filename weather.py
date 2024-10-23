@@ -10,9 +10,7 @@ import sqlite3
 from zoneinfo import ZoneInfo
 from flask import Flask, jsonify, request, make_response
 
-
-
-# Open the location JSON file
+# Open the config JSON file
 with open('config.json', 'r') as f:
     # Load the JSON config into a Python dictionary
     config = json.load(f)
@@ -36,7 +34,6 @@ else:
     longitude = config["location"]["lon"]
     latitude = config["location"]["lat"]
 
-
 if "interval" in config:
     interval_minutes = int(config["interval"]["minutes"])
     interval_seconds = int(config["interval"]["seconds"])
@@ -46,14 +43,12 @@ else:
 
 api_url="https://api.weather.gov/points/" + latitude + "," + longitude
 
-
 print("Starting weather scraper for "
       "longitude:", longitude,
       "latitude:", latitude,
       "every", interval_minutes, "minutes",
       interval_seconds, "seconds",
 	  "at URL:", api_url);
-
 
 # utility used to convert weather time stamps to UTC
 def convert_to_utc(date_string, timezone_str):
@@ -150,8 +145,7 @@ def get_forecast():
         'min': min_temp
     }
     return(jsonify(return_data))
-
-
+# end of get_forecast
 
 
 if __name__ == "__main__":
@@ -164,31 +158,5 @@ if __name__ == "__main__":
     # start API service
     app.run(host="0.0.0.0", port=5000, debug=True)
     
-
-
-def print_table_schema(conn, table_name):
-    """Prints the schema of a given table in an SQLite database."""
-
-    cursor = conn.cursor()
-    cursor.execute(f"PRAGMA table_info({table_name})")
-    schema = cursor.fetchall()
-
-    print(f"Schema for table '{table_name}':")
-    for column in schema:
-        print(f" - {column[1]} ({column[2]})")
-
-
-print_table_schema(conn, "forecast")
-
-
-# Execute a query to fetch the data
-cursor.execute("SELECT * FROM forecast")
-
-# Fetch all the rows
-rows = cursor.fetchall()
-
-# Print the table
-for row in rows:
-    print(row)
 
 conn.close()
