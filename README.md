@@ -1,5 +1,5 @@
 # weather_scraper_service
-A service to scrape weather data from weather.gov and serve it via and API
+A service to scrape weather data from weather.gov and serve it via an API
 
 ## Operations
 To run this service:
@@ -8,9 +8,9 @@ To run this service:
 docker compose up
 ```
 
-By default, this service will poll weather.gov every 60 minutes for forecast data for `Latitude 39.7456, Longitude -97.0892`. To chance this behavior modify `config.json`
+By default, this service will poll weather.gov every 60 minutes for forecast data for `Latitude 39.7456, Longitude -97.0892`. To change this behavior modify `config.json`
 
-To test this serivce
+To test this service
 
 ```
 % curl 'http://localhost:8080/forecast?lat=39.7456&long=-97.0892&date=2024-10-23&hour=10'
